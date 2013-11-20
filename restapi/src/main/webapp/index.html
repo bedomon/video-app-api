@@ -1,0 +1,108 @@
+<html>
+  <head>
+    <link href="css/style.css" rel="stylesheet" type="text/css">
+    <script type="text/javascript" src="vendor/jquery.js"></script>
+    <script type="text/javascript" src="vendor/jquery.ui.widget.js"></script>
+    <script type="text/javascript" src="vendor/jquery.fileupload.js"></script>
+    <script type="text/javascript" src="vendor/underscore.js"></script>
+    <script type="text/javascript" src="vendor/backbone.js"></script>
+    <script type="text/javascript" src="compiled/application.js"></script>
+    <script type="text/javascript">
+      $(document).ready(function(){
+        Video.initialize();
+      });
+    </script>
+  </head>
+  <body>
+    <div class="top">
+      <div class="logo">
+      </div>
+      <div class="video-container">
+      </div>
+    </div>
+    <div class="main-menu-container">
+    </div>
+    <div class="middle">
+      <div class="featured-container">
+      </div>
+    </div>
+    <div class="bottom">
+    </div>
+
+    <div class="popup">
+    </div>
+
+    <script id="video_tpl" type="text/template">
+      <div class="title"><h3><%= video.get("title") %></h3></div>
+      <video width="100%" height="80%" controls>
+        <source src="/<%= video.get('video_file') %>" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+      <div class="description"><%= video.get('description') %></div>
+    </script>
+
+    <script id="featured_video_tpl" type="text/template">
+      featured video
+    </script>
+
+    <script id="main_menu_tpl" type="text/template">
+      <a href="#home">Home</a>
+      <% if(localStorage.token){ %>
+        <a href="#home" class="main-menu-item logout js-logout">Logout</span>
+        <a href="#upload" class="main-menu-item upload js-upload">Upload</span>
+        <a href="#videos" class="main-menu-item my-videos js-my-videos">My Videos</span>
+      <% } else { %>
+        <a href="#home" class="main-menu-item login js-login">Login</span>
+        <a href="#home" class="main-menu-item register js-register">Register</span>
+      <% } %>
+    </script>
+
+    <script id="login_form_tpl" type="text/template">
+      <input type="text" class="js-login-email" placeholder="Email" value="user@example.com" />
+      <input type="password" class="js-login-password" placeholder="Password" value="password" />
+      <input type="button" class="js-login-submit" value="Login" />
+      <input type="button" class="js-login-cancel" value="Cancel" />
+      <span class="js-status">
+      </span>
+    </script>
+
+    <script id="register_form_tpl" type="text/template">
+      <input type="text" class="js-register-email" placeholder="Email" />
+      <input type="password" class="js-register-password" placeholder="Password" />
+      <input type="password" class="js-register-confirm-password" placeholder="Confirm password" />
+      <input type="button" class="js-register-submit" value="Register" />
+      <input type="button" class="js-register-cancel" value="Cancel" />
+      <span class="js-status">
+      </span>
+    </script>
+
+    <script id="upload_form_tpl" type="text/template">
+      <form method="POST" class="js-upload-form">
+        <input type="file" class="js-upload-file" name="file" />
+        <input type="button" class="js-upload-submit" value="Upload" />
+        <input type="button" class="js-upload-cancel" value="Cancel" />
+      </form>
+    </script>
+
+    <script id="videos_tpl" type="text/template">
+      <a class="my-videos-item" href="#videos/view/<%= video.get('id') %>">
+        <div class="preview">
+          <video width="200px" height="130px">
+            <source src="/home/vlatko/<%= video.get('video_file') %>" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+        </div>
+        <div class="title">
+          <h3><%= video.get("title") %></h3>
+        </div>
+        <div class="description">
+          <%= video.get("description") %>
+        </div>
+        <div class="created_at">
+          Uploaded at: <%= video.get("created_at") %>
+        </div>
+      </a>
+    </script>
+
+  </body>
+</html>

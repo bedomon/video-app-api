@@ -1,0 +1,127 @@
+body, html{
+  padding: 0px;
+  margin: 0px;
+}
+
+.hidden{
+  display: none;
+}
+
+.error{
+  border: 1px solid red;
+}
+
+.top{
+  height: 80%;
+  width: 100%;
+  background-color: #81A594;
+  position: relative;
+}
+
+.middle{
+  height: 40%;
+  width: 100%;
+  background-color: #E6E6DC;
+}
+
+.bottom{
+  height: 60%;
+  width: 100%;
+  background-color: #00628B;
+}
+
+.logo{
+  margin: 0 auto;
+  width: 400px;
+  height: 20%;
+  border: 1px solid red;
+}
+
+.main-menu-container{
+  position: absolute;
+  top: 0px;
+  width: 100%;
+  border: 1px solid red;
+  text-align: right;
+}
+
+.main-menu{
+  width: 80%;
+  height: 50px;
+  margin: 0 auto;
+  border: 1px solid red;
+}
+
+.main-menu .main-menu-item{
+  cursor: pointer;
+  color: blue;
+}
+
+.video-container{
+  width: 100%;
+  border: 1px solid red;
+  height: 80%;
+  position: absolute;
+  bottom: 0px;
+}
+
+.video-container .my-videos-list{
+  width: 80%;
+  margin: 0 auto;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.video-container .my-videos-item{
+  clear: both;
+  height: 150px;
+  cursor: pointer;
+  display: block;
+  color: black;
+  text-decoration: none;
+}
+
+.video-container .preview{
+  width: 200px;
+  float: left;
+  margin-right: 20px;
+}
+
+.video{
+  height: 100%;
+  margin: 0 auto;
+  width: 80%;
+  border: 1px solid red;
+}
+
+.featured-container{
+  width: 80%;
+  margin: 0 auto;
+  border: 1px solid red;
+  height: 80%;
+  position: relative;
+}
+
+.featured-video{
+  width: 20%;
+  height: 100%;
+  float: left;
+  padding: 20px;
+}
+
+.popup{
+  position: absolute;
+  width: 100%;
+  height: 10px;
+  top: 40%;
+}
+
+.login-form, .register-form, .upload-form{
+  position: relative;
+  top: 40%;
+  margin: 0 auto;
+  width: 200px;
+  height: 300px;
+  border: 1px solid green;
+  background-color: white;
+}
