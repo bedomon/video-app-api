@@ -16,4 +16,12 @@ public class Video extends Database {
 		return records;
 	}
 
+	public ArrayList find_all_confirmed_by_user(String token) {
+		Login login = new Login();
+		HashMap current_user = login.current_user(token);
+		String sql = "SELECT * FROM videos WHERE confirmed = '1' AND user_id = " + current_user.get("id");
+		ArrayList records = fetch_records(sql);
+		return records;
+	}
+
 }

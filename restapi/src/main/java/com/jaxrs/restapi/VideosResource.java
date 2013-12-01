@@ -13,13 +13,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.enterprise.inject.New;
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerResponseContext;
+import javax.ws.rs.container.ContainerResponseFilter;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -32,7 +39,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 
 @Path("/videos")
 @Produces("application/json")
-public class VideosResource {
+public class VideosResource extends MyApplication{
 	
 	Video video = new Video();
 
@@ -48,9 +55,27 @@ public class VideosResource {
 	@GET
 	@Path("/index")
 	public String index(@QueryParam("token") String token) throws JsonGenerationException, JsonMappingException, IOException{
-		ArrayList record = video.find_all_by_user(token);
+		ArrayList record = video.find_all_confirmed_by_user(token);
 		ObjectMapper mapper = new ObjectMapper();
 		String json = mapper.writeValueAsString(record);
+		return json;
+	}
+	
+
+	@PUT
+	@Path("/{id}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public String update(@QueryParam("token") String token, @PathParam("id") Integer id, String jsonBody, @Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException {
+		Login login = new Login();
+		HashMap current_user = login.current_user(token);
+		ArrayList updated_record = new ArrayList();
+		String json = "";
+		if(current_user.size() > 0){
+			jsonBody = jsonBody.replace("}", ",\"user_id\":\"" + current_user.get("id") + "\"}");
+			updated_record = video.update(jsonBody);
+			ObjectMapper mapper = new ObjectMapper();
+			json = mapper.writeValueAsString(updated_record);
+		}
 		return json;
 	}
 	
@@ -69,8 +94,7 @@ public class VideosResource {
 		String json = mapper.writeValueAsString(inserted_record);
 		if(current_user.size() > 0){
 			String file_name = file_detail.getFileName();
-			String uploaded_file_location = "/home/vlatko/"
-					+ file_name;
+			String uploaded_file_location = "/home/vlatko/" + file_name;
 			writeToFile(uploaded_input_stream, uploaded_file_location);
 			String output = "File uploaded to : " + uploaded_file_location;
 			HashMap<String, String> record = new HashMap();
@@ -100,5 +124,5 @@ public class VideosResource {
 			e.printStackTrace();
 		}
 	}
-
+	
 }

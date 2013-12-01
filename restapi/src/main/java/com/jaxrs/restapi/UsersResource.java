@@ -30,7 +30,7 @@ import com.jaxrs.models.User;
 @Path("/users")
 @Produces("application/json")
 @Consumes({"application/xml", "application/json", "application/x-www-form-urlencoded"})
-public class UsersResource implements ContainerResponseFilter {
+public class UsersResource extends MyApplication {
 	
 	User user = new User();
 	
@@ -84,11 +84,5 @@ public class UsersResource implements ContainerResponseFilter {
 		return json;
 	}
 
-	@Override
-	public void filter(ContainerRequestContext requestContext,
-			ContainerResponseContext responseContext) throws IOException {
-		responseContext.getHeaders().add("Access-Control-Allow-Origin", "*");
-		
-	}
 	
 }

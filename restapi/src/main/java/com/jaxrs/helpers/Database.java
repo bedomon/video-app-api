@@ -124,7 +124,7 @@ public class Database {
 				value = encrypt_password(value, date, date_format);
 			}
 			columns.add(key);
-			values.add("'" + value + "'");
+			values.add("'" + value.toString().replaceAll("'","''") + "'");
 	        it.remove(); 
 	    }
 		
@@ -164,11 +164,12 @@ public class Database {
 		Object id = "";
 		for (Entry<String, Object> entry : map.entrySet()) {
 			if (entry.getKey() != "id") {
-				updates.add(entry.getKey() + " = '" + entry.getValue() + "' ");
+				updates.add(entry.getKey() + " = '" + entry.getValue().toString().replaceAll("'","''") + "' ");
 			} else {
-				id = entry.getValue();
+				id = entry.getValue().toString().replaceAll("'","''");
 			}
 		}
+		
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		Date date = new Date();
 		updates.add("updated_at = '" + dateFormat.format(date).toString()
