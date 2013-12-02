@@ -91,7 +91,7 @@ public class Database {
 		return records;
 	}
 
-	public Boolean destroy(int id) {
+	public Boolean delete(int id) {
 		Boolean status = false;
 		Connection conn = connect();
 		String sql = "DELETE FROM " + table + " WHERE id = " + id;

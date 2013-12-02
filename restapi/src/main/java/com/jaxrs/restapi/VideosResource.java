@@ -15,6 +15,7 @@ import java.util.Map;
 import javax.enterprise.inject.New;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -53,14 +54,42 @@ public class VideosResource extends MyApplication{
 	}
 
 	@GET
-	@Path("/index")
-	public String index(@QueryParam("token") String token) throws JsonGenerationException, JsonMappingException, IOException{
-		ArrayList record = video.find_all_confirmed_by_user(token);
-		ObjectMapper mapper = new ObjectMapper();
-		String json = mapper.writeValueAsString(record);
+	@Path("/my_videos")
+	public String my_videos(@QueryParam("token") String token) throws JsonGenerationException, JsonMappingException, IOException{
+		Login login = new Login();
+		HashMap current_user = login.current_user(token);
+		String json = new String();
+		if(current_user.size() > 0){
+			ArrayList record = video.find_all_confirmed_by_user(token);
+			ObjectMapper mapper = new ObjectMapper();
+			json = mapper.writeValueAsString(record);
+		}
 		return json;
 	}
 	
+	@GET
+	@Path("/featured")
+	public String featured() throws JsonGenerationException, JsonMappingException, IOException{
+		String json = new String();
+		ArrayList record = video.find_all_featured();
+		ObjectMapper mapper = new ObjectMapper();
+		json = mapper.writeValueAsString(record);
+		return json;
+	}
+	
+	@GET
+	@Path("/admin_videos")
+	public String admin_videos(@QueryParam("token") String token) throws JsonGenerationException, JsonMappingException, IOException{
+		Login login = new Login();
+		HashMap current_user = login.current_user(token);
+		String json = new String();
+		if(current_user.size() > 0){
+			ArrayList record = video.find_all();
+			ObjectMapper mapper = new ObjectMapper();
+			json = mapper.writeValueAsString(record);
+		}
+		return json;
+	}
 
 	@PUT
 	@Path("/{id}")
@@ -75,6 +104,22 @@ public class VideosResource extends MyApplication{
 			updated_record = video.update(jsonBody);
 			ObjectMapper mapper = new ObjectMapper();
 			json = mapper.writeValueAsString(updated_record);
+		}
+		return json;
+	}
+
+	@DELETE
+	@Path("/{id}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public String delete(@QueryParam("token") String token, @PathParam("id") Integer id, @Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException {
+		Login login = new Login();
+		HashMap current_user = login.current_user(token);
+		boolean status = false;
+		String json = "";
+		if(current_user.size() > 0){
+			status = video.delete(id);
+			ObjectMapper mapper = new ObjectMapper();
+			json = mapper.writeValueAsString(status);
 		}
 		return json;
 	}

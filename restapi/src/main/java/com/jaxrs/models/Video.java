@@ -24,4 +24,10 @@ public class Video extends Database {
 		return records;
 	}
 
+	public ArrayList find_all_featured() {
+		String sql = "SELECT * FROM videos WHERE confirmed = '1' AND featured = '1'";
+		ArrayList records = fetch_records(sql);
+		return records;
+	}
+
 }

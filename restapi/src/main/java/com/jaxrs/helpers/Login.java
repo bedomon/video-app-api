@@ -27,11 +27,14 @@ public class Login extends Database{
 			HashMap login = (HashMap) logins.get(0);
 			token = login.get("token").toString();
 			int id = Integer.parseInt(login.get("id").toString());
-			destroy(id);
+			delete(id);
 		}
 		update_token(user_id, token);
 		HashMap hash_row = new HashMap();
 		hash_row.put("token", token);
+		hash_row.put("email", user.get("email"));
+		hash_row.put("name", user.get("name"));
+		hash_row.put("user_type", user.get("user_type"));
 		records.add(hash_row);
 		return records;
 	}

@@ -22,7 +22,6 @@ public class MyApplication extends Application implements ContainerResponseFilte
         classes.add(VideosResource.class);
         classes.add(UsersResource.class);
         classes.add(LoggingFilter.class);
-        
         return classes;
     }
 
