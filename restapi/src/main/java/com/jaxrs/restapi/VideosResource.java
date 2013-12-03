@@ -8,6 +8,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,7 +58,7 @@ public class VideosResource extends MyApplication{
 
 	@GET
 	@Path("/my_videos")
-	public String my_videos(@QueryParam("token") String token) throws JsonGenerationException, JsonMappingException, IOException{
+	public String my_videos(@QueryParam("token") String token, @Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException{
 		Login login = new Login();
 		HashMap current_user = login.current_user(token);
 		String json = new String();
@@ -63,6 +66,8 @@ public class VideosResource extends MyApplication{
 			ArrayList record = video.find_all_confirmed_by_user(token);
 			ObjectMapper mapper = new ObjectMapper();
 			json = mapper.writeValueAsString(record);
+		}else{
+			response.sendError(401);
 		}
 		return json;
 	}
@@ -79,7 +84,7 @@ public class VideosResource extends MyApplication{
 	
 	@GET
 	@Path("/admin_videos")
-	public String admin_videos(@QueryParam("token") String token) throws JsonGenerationException, JsonMappingException, IOException{
+	public String admin_videos(@QueryParam("token") String token, @Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException{
 		Login login = new Login();
 		HashMap current_user = login.current_user(token);
 		String json = new String();
@@ -87,6 +92,8 @@ public class VideosResource extends MyApplication{
 			ArrayList record = video.find_all();
 			ObjectMapper mapper = new ObjectMapper();
 			json = mapper.writeValueAsString(record);
+		}else{
+			response.sendError(401);
 		}
 		return json;
 	}
@@ -104,6 +111,8 @@ public class VideosResource extends MyApplication{
 			updated_record = video.update(jsonBody);
 			ObjectMapper mapper = new ObjectMapper();
 			json = mapper.writeValueAsString(updated_record);
+		}else{
+			response.sendError(401);
 		}
 		return json;
 	}
@@ -120,6 +129,8 @@ public class VideosResource extends MyApplication{
 			status = video.delete(id);
 			ObjectMapper mapper = new ObjectMapper();
 			json = mapper.writeValueAsString(status);
+		}else{
+			response.sendError(401);
 		}
 		return json;
 	}
@@ -130,7 +141,8 @@ public class VideosResource extends MyApplication{
 	public String create(
 			@FormDataParam("file") InputStream uploaded_input_stream,
 			@FormDataParam("file") FormDataContentDisposition file_detail, 
-			@QueryParam("token") String token) throws JsonGenerationException, JsonMappingException, IOException {
+			@QueryParam("token") String token, 
+			@Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException, NoSuchAlgorithmException {
 		
 		ArrayList inserted_record = new ArrayList();
 		ObjectMapper mapper = new ObjectMapper();
@@ -139,16 +151,47 @@ public class VideosResource extends MyApplication{
 		String json = mapper.writeValueAsString(inserted_record);
 		if(current_user.size() > 0){
 			String file_name = file_detail.getFileName();
-			String uploaded_file_location = "/home/vlatko/" + file_name;
+			String digest = generate_digest(file_name);
+			String extension = get_extension(file_name);
+			String uploaded_file_location = "/var/www/video-app-uploads/" + current_user.get("id").toString() + "/" + digest + "." + extension;
+			String uploaded_file_url = "http://localhost/video-app-uploads/" + current_user.get("id").toString() + "/" + digest + "." + extension;
 			writeToFile(uploaded_input_stream, uploaded_file_location);
-			String output = "File uploaded to : " + uploaded_file_location;
+			
 			HashMap<String, String> record = new HashMap();
 			record.put("title", file_name);
-			record.put("video_file", file_name);
+			record.put("video_file", uploaded_file_url);
 			inserted_record = video.create(record);
 			json = mapper.writeValueAsString(inserted_record);
-		}	
+		}else{
+			response.sendError(401);
+		}
 		return json;
+	}
+	
+	private String get_extension(String file_name) {
+		String extension = "";
+		int i = file_name.lastIndexOf('.');
+		if (i > 0) {
+		    extension = file_name.substring(i+1);
+		}
+		return extension;
+	}
+
+	private String generate_digest(String file_name) throws UnsupportedEncodingException, NoSuchAlgorithmException{ 
+		MessageDigest md = MessageDigest.getInstance("MD5");
+        md.update(file_name.getBytes());
+        byte byteData[] = md.digest();
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < byteData.length; i++) {
+         sb.append(Integer.toString((byteData[i] & 0xff) + 0x100, 16).substring(1));
+        }
+        StringBuffer hexString = new StringBuffer();
+    	for (int i=0;i<byteData.length;i++) {
+    		String hex=Integer.toHexString(0xff & byteData[i]);
+   	     	if(hex.length()==1) hexString.append('0');
+   	     	hexString.append(hex);
+    	}
+		return hexString.toString();
 	}
 	
 

@@ -1,5 +1,6 @@
 package com.jaxrs.restapi;
 
+import java.io.File;
 import java.io.IOException;
 
 import java.util.ArrayList;
@@ -36,12 +37,14 @@ public class UsersResource extends MyApplication {
 	
 	@GET
 	@Path("/view/{id}")
-	public String view(@PathParam("id") Integer id, @QueryParam("token") String token) throws JsonGenerationException, JsonMappingException, IOException {
+	public String view(@PathParam("id") Integer id, @QueryParam("token") String token, @Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException {
 		ArrayList record = new ArrayList();
 		Login login = new Login();
 		HashMap current_user = login.current_user(token);
 		if(current_user.size() > 0){
 			record = user.find_by_id(id);
+		}else{
+			response.sendError(401);
 		}
 		ObjectMapper mapper = new ObjectMapper();
 		String json = mapper.writeValueAsString(record);
@@ -50,12 +53,14 @@ public class UsersResource extends MyApplication {
 	
 	@GET
 	@Path("/index")
-	public String index(@QueryParam("token") String token) throws JsonGenerationException, JsonMappingException, IOException {
+	public String index(@QueryParam("token") String token, @Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException {
 		ArrayList records = new ArrayList();
 		Login login = new Login();
 		HashMap current_user = login.current_user(token);
-		if(current_user.size() > 0){
+		if(current_user.size() > 0 && current_user.get("user_type") == "admin"){
 			records = user.find_all();
+		}else{
+			response.sendError(401);
 		}
 		ObjectMapper mapper = new ObjectMapper();
 		String json = mapper.writeValueAsString(records);
@@ -70,6 +75,10 @@ public class UsersResource extends MyApplication {
 		record.put("name", name);
 		record.put("password", password);
 		ArrayList inserted_record = user.create(record);
+		HashMap last_user = new HashMap();
+		last_user = (HashMap) inserted_record.get(0);
+		File dir = new File("/home/vlatko/apps/video-app-uploads/" + last_user.get("id").toString());
+		dir.mkdir();
 		ObjectMapper mapper = new ObjectMapper();
 		String json = mapper.writeValueAsString(inserted_record);
 		return json;

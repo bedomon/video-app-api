@@ -124,6 +124,7 @@ public class Database {
 				value = encrypt_password(value, date, date_format);
 			}
 			columns.add(key);
+			if(value == null) value = "";
 			values.add("'" + value.toString().replaceAll("'","''") + "'");
 	        it.remove(); 
 	    }

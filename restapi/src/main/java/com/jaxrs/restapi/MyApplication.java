@@ -29,5 +29,6 @@ public class MyApplication extends Application implements ContainerResponseFilte
 	public void filter(ContainerRequestContext requestContext,
 			ContainerResponseContext responseContext) throws IOException {
 		responseContext.getHeaders().add("Access-Control-Allow-Origin", '*');
+		
 	}
 }
