@@ -12,6 +12,11 @@ public class Login extends Database{
 	
 	DateFormat date_format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	
+	public static String generate_token_string(){
+		String token = UUID.randomUUID().toString();
+		return token;
+	}
+	
 	public ArrayList generate_token(ArrayList records) {
 		HashMap user = (HashMap) records.get(0);
 		String user_id = user.get("id").toString();
@@ -39,21 +44,21 @@ public class Login extends Database{
 		return records;
 	}
 	
-	public HashMap current_user(String token){
-		Date last_date = get_last_date();
-		String sql = "SELECT * FROM logins WHERE token = '" + token + "' AND updated_at > '" + date_format.format(last_date).toString() + "'";
-		ArrayList logins = fetch_records(sql);
+	public HashMap current_user(String user_id){
+		String sql = "";
+		//Date last_date = get_last_date();
+		//String sql = "SELECT * FROM logins WHERE user_id = '" + user_id + "' AND updated_at > '" + date_format.format(last_date).toString() + "'";
+		//ArrayList logins = fetch_records(sql);
 		ArrayList users = new ArrayList();
 		HashMap current_user = new HashMap();
-		if(logins.size() == 1){
-			HashMap login = (HashMap) logins.get(0);
-			String user_id = login.get("user_id").toString();
+		//if(logins.size() == 1){
+			//HashMap login = (HashMap) logins.get(0);
 			sql = "SELECT * FROM users WHERE id = '" + user_id + "'";
 			users = fetch_records(sql);
 			if(users.size() == 1){
 				current_user = (HashMap) users.get(0);
 			}
-		}
+		//}
 		return current_user;
 	}
 	

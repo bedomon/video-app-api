@@ -79,7 +79,7 @@ public class Database {
 		return records;
 	}
 
-	public ArrayList find_by_id(int id) {
+	public ArrayList find_by_id(String id) {
 		String sql = "SELECT * FROM " + table + " WHERE id = " + id;
 		ArrayList records = fetch_records(sql);
 		return records;

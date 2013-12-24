@@ -4,19 +4,27 @@ import java.io.File;
 
 import com.jaxrs.helpers.Login;
 import com.jaxrs.models.Video;
+
+import java.io.BufferedReader;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
+import java.util.regex.Pattern;
 
 import javax.enterprise.inject.New;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
@@ -45,11 +53,11 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 @Produces("application/json")
 public class VideosResource extends MyApplication{
 	
-	Video video = new Video();
+	Video video = new Video(); 
 
 	@GET
 	@Path("/view/{id}")
-	public String view(@PathParam("id") Integer id, @QueryParam("token") String token) throws JsonGenerationException, JsonMappingException, IOException{
+	public String view(@PathParam("id") String id) throws JsonGenerationException, JsonMappingException, IOException{
 		ArrayList record = video.find_by_id(id);
 		ObjectMapper mapper = new ObjectMapper();
 		String json = mapper.writeValueAsString(record);
@@ -58,12 +66,13 @@ public class VideosResource extends MyApplication{
 
 	@GET
 	@Path("/my_videos")
-	public String my_videos(@QueryParam("token") String token, @Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException{
-		Login login = new Login();
-		HashMap current_user = login.current_user(token);
+	public String my_videos(@Context HttpServletRequest request, @Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException{
+		String token = request.getHeader("token");
 		String json = new String();
-		if(current_user.size() > 0){
-			ArrayList record = video.find_all_confirmed_by_user(token);
+		HttpSession session = request.getSession(true);
+		String user_id = (String) session.getAttribute(token);
+	    if(user_id != null){
+			ArrayList record = video.find_all_confirmed_by_user(user_id);
 			ObjectMapper mapper = new ObjectMapper();
 			json = mapper.writeValueAsString(record);
 		}else{
@@ -84,15 +93,22 @@ public class VideosResource extends MyApplication{
 	
 	@GET
 	@Path("/admin_videos")
-	public String admin_videos(@QueryParam("token") String token, @Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException{
+	public String admin_videos(@Context HttpServletRequest request, @Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException{
+		String token = request.getHeader("token");
 		Login login = new Login();
-		HashMap current_user = login.current_user(token);
 		String json = new String();
-		if(current_user.size() > 0){
-			ArrayList record = video.find_all();
-			ObjectMapper mapper = new ObjectMapper();
-			json = mapper.writeValueAsString(record);
-		}else{
+		HttpSession session = request.getSession(true);
+		String user_id = (String) session.getAttribute(token);
+	    if(user_id != null){
+			HashMap current_user = login.current_user(user_id);
+			if(current_user.size() > 0){
+				ArrayList record = video.find_all();
+				ObjectMapper mapper = new ObjectMapper();
+				json = mapper.writeValueAsString(record);
+			}else{
+				response.sendError(401);
+			}
+	    }else{
 			response.sendError(401);
 		}
 		return json;
@@ -101,13 +117,14 @@ public class VideosResource extends MyApplication{
 	@PUT
 	@Path("/{id}")
 	@Consumes(MediaType.APPLICATION_JSON)
-	public String update(@QueryParam("token") String token, @PathParam("id") Integer id, String jsonBody, @Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException {
-		Login login = new Login();
-		HashMap current_user = login.current_user(token);
+	public String update(@PathParam("id") Integer id, String jsonBody, @Context HttpServletRequest request, @Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException {
+		String token = request.getHeader("token");
 		ArrayList updated_record = new ArrayList();
 		String json = "";
-		if(current_user.size() > 0){
-			jsonBody = jsonBody.replace("}", ",\"user_id\":\"" + current_user.get("id") + "\"}");
+		HttpSession session = request.getSession(true);
+		String user_id = (String) session.getAttribute(token);
+	    if(user_id != null){
+			jsonBody = jsonBody.replace("}", ",\"user_id\":\"" + user_id + "\"}");
 			updated_record = video.update(jsonBody);
 			ObjectMapper mapper = new ObjectMapper();
 			json = mapper.writeValueAsString(updated_record);
@@ -120,12 +137,13 @@ public class VideosResource extends MyApplication{
 	@DELETE
 	@Path("/{id}")
 	@Consumes(MediaType.APPLICATION_JSON)
-	public String delete(@QueryParam("token") String token, @PathParam("id") Integer id, @Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException {
-		Login login = new Login();
-		HashMap current_user = login.current_user(token);
+	public String delete(@PathParam("id") Integer id, @Context HttpServletRequest request, @Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException {
 		boolean status = false;
+		String token = request.getHeader("token");
 		String json = "";
-		if(current_user.size() > 0){
+		HttpSession session = request.getSession(true);
+		String user_id = (String) session.getAttribute(token);
+	    if(user_id != null){
 			status = video.delete(id);
 			ObjectMapper mapper = new ObjectMapper();
 			json = mapper.writeValueAsString(status);
@@ -141,31 +159,94 @@ public class VideosResource extends MyApplication{
 	public String create(
 			@FormDataParam("file") InputStream uploaded_input_stream,
 			@FormDataParam("file") FormDataContentDisposition file_detail, 
-			@QueryParam("token") String token, 
-			@Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException, NoSuchAlgorithmException {
-		
+			@Context HttpServletRequest request, 
+			@Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException, NoSuchAlgorithmException, InterruptedException {
+		String token = request.getHeader("token");
 		ArrayList inserted_record = new ArrayList();
 		ObjectMapper mapper = new ObjectMapper();
-		Login login = new Login();
-		HashMap current_user = login.current_user(token);
 		String json = mapper.writeValueAsString(inserted_record);
-		if(current_user.size() > 0){
+		HttpSession session = request.getSession(true);
+		String user_id = (String) session.getAttribute(token);
+	    if(user_id != null){
 			String file_name = file_detail.getFileName();
 			String digest = generate_digest(file_name);
 			String extension = get_extension(file_name);
-			String uploaded_file_location = "/var/www/video-app-uploads/" + current_user.get("id").toString() + "/" + digest + "." + extension;
-			String uploaded_file_url = "http://localhost/video-app-uploads/" + current_user.get("id").toString() + "/" + digest + "." + extension;
+			String video_folder = generate_digest(file_name);
+			
+			String uploads_path = "/var/www/video-app-uploads/";
+			String uploads_url = "http://localhost/video-app-uploads/";
+			
+			File dir = new File(uploads_path + user_id + "/" + video_folder);
+			dir.mkdir();
+			
+			String uploaded_file_location = uploads_path + user_id + "/" + video_folder + "/" + digest + "." + extension;
+			String uploaded_file_url = uploads_url + user_id + "/" + video_folder + "/" + digest + "." + extension;
+			String transcoded_file_location = uploads_path + user_id + "/" + video_folder + "/" + digest + ".transcoded.mp4";
+			String transcoded_file_url = uploads_url + user_id + "/" + video_folder + "/" + digest + ".transcoded.mp4";
+			String thumbnail_location = uploads_path + user_id + "/" + video_folder + "/" + digest + ".jpg";
+			String thumbnail_url = uploads_url + user_id + "/" + video_folder + "/" + digest + ".jpg";
+			
 			writeToFile(uploaded_input_stream, uploaded_file_location);
 			
 			HashMap<String, String> record = new HashMap();
 			record.put("title", file_name);
 			record.put("video_file", uploaded_file_url);
+			record.put("thumbnail", thumbnail_url);
 			inserted_record = video.create(record);
 			json = mapper.writeValueAsString(inserted_record);
-		}else{
+
+			transcode(inserted_record, uploaded_file_location, transcoded_file_location);
+			get_thumbnail(uploaded_file_location, thumbnail_location);
+	    }else{
 			response.sendError(401);
 		}
 		return json;
+	}
+	
+
+	private void get_thumbnail(String uploaded_file_location, String thumbnail_location) throws IOException, InterruptedException {
+		String command = "ffmpeg -itsoffset -4  -i " + uploaded_file_location + " -vcodec mjpeg -vframes 1 -an -f rawvideo -s 320x240 " + thumbnail_location;
+		Process p = Runtime.getRuntime().exec(command);
+		p.waitFor();
+	}
+
+	private void transcode(final ArrayList video_data, final String uploaded_file_location, String transcoded_file_location) throws IOException{
+		ProcessBuilder pb = new ProcessBuilder("ffmpeg", "-i", uploaded_file_location, transcoded_file_location);
+	    final Process p = pb.start();
+	    new Thread() {
+	      public void run() {
+	    	try{
+		        Scanner sc = new Scanner(p.getErrorStream());
+		        Pattern durPattern = Pattern.compile("(?<=Duration: )[^,]*");
+		        String dur = sc.findWithinHorizon(durPattern, 0);
+		        if (dur == null)
+		          throw new RuntimeException("Could not parse duration.");
+		        String[] hms = dur.split(":");
+		        double totalSecs = Integer.parseInt(hms[0]) * 3600
+		                         + Integer.parseInt(hms[1]) *   60
+		                         + Double.parseDouble(hms[2]);
+		        System.out.println("Total duration: " + totalSecs + " seconds.");
+		        Pattern timePattern = Pattern.compile("(?<=time=)[\\d:.]*");
+		        
+		        String match;
+		        String[] matchSplit;
+		        while (null != (match = sc.findWithinHorizon(timePattern, 0))) {
+		            matchSplit = match.split(":");
+		            double progress = Integer.parseInt(matchSplit[0]) * 3600 +
+		                Integer.parseInt(matchSplit[1]) * 60 +
+		                Double.parseDouble(matchSplit[2]) / totalSecs;
+		            System.out.printf("Progress: %.2f%%%n", progress * 100);
+		        }
+	    	}finally{
+	    		confirm_video(video_data);
+	    	}
+	      }
+	    }.start();
+	}
+
+	private void confirm_video(ArrayList video_data) {
+		HashMap v = (HashMap) video_data.get(0);
+		ArrayList updated_record = video.update("{ \"id\": \"" + v.get("id").toString() + "\", \"confirmed\": \"1\" }");
 	}
 	
 	private String get_extension(String file_name) {
@@ -177,9 +258,11 @@ public class VideosResource extends MyApplication{
 		return extension;
 	}
 
-	private String generate_digest(String file_name) throws UnsupportedEncodingException, NoSuchAlgorithmException{ 
+	private String generate_digest(String string) throws UnsupportedEncodingException, NoSuchAlgorithmException{ 
+		java.util.Date date= new java.util.Date();
+		string = string + new Timestamp(date.getTime());
 		MessageDigest md = MessageDigest.getInstance("MD5");
-        md.update(file_name.getBytes());
+        md.update(string.getBytes());
         byte byteData[] = md.digest();
         StringBuffer sb = new StringBuffer();
         for (int i = 0; i < byteData.length; i++) {
@@ -194,7 +277,6 @@ public class VideosResource extends MyApplication{
 		return hexString.toString();
 	}
 	
-
 	private void writeToFile(InputStream uploadedInputStream, String uploadedFileLocation) {
 		try {
 			OutputStream out = new FileOutputStream(new File(
