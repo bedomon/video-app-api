@@ -89,6 +89,8 @@ public class UsersResource extends MyApplication {
 		last_user = (HashMap) inserted_record.get(0);
 		File dir = new File("/var/www/video-app-uploads/" + last_user.get("id").toString());
 		dir.mkdir();
+		dir = new File("/var/www/video-app-segments/" + last_user.get("id").toString());
+		dir.mkdir();
 		ObjectMapper mapper = new ObjectMapper();
 		String json = mapper.writeValueAsString(inserted_record);
 		return json;
@@ -118,7 +120,6 @@ public class UsersResource extends MyApplication {
 	@Path("/logout")
 	public String logout(@Context HttpServletRequest request, @Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException {
 		HttpSession session = request.getSession(true);
-		session.invalidate();
 		return "logout";
 	}
 

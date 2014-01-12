@@ -56,6 +56,15 @@ public class VideosResource extends MyApplication{
 	Video video = new Video(); 
 
 	@GET
+	@Path("/index")
+	public String index() throws JsonGenerationException, JsonMappingException, IOException{
+		ArrayList record = video.find_all();
+		ObjectMapper mapper = new ObjectMapper();
+		String json = mapper.writeValueAsString(record);
+		return json;
+	}
+	
+	@GET
 	@Path("/view/{id}")
 	public String view(@PathParam("id") String id) throws JsonGenerationException, JsonMappingException, IOException{
 		ArrayList record = video.find_by_id(id);
@@ -97,7 +106,7 @@ public class VideosResource extends MyApplication{
 		String token = request.getHeader("token");
 		Login login = new Login();
 		String json = new String();
-		HttpSession session = request.getSession(true);
+		HttpSession session = request.getSession();
 		String user_id = (String) session.getAttribute(token);
 	    if(user_id != null){
 			HashMap current_user = login.current_user(user_id);
@@ -134,6 +143,26 @@ public class VideosResource extends MyApplication{
 		return json;
 	}
 
+
+	@PUT
+	@Path("/feature/{id}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public String feature(@PathParam("id") Integer id, String jsonBody, @Context HttpServletRequest request, @Context HttpServletResponse response) throws JsonGenerationException, JsonMappingException, IOException {
+		String token = request.getHeader("token");
+		ArrayList updated_record = new ArrayList();
+		String json = "";
+		HttpSession session = request.getSession(true);
+		String user_id = (String) session.getAttribute(token);
+	    if(user_id != null){
+			updated_record = video.update(jsonBody);
+			ObjectMapper mapper = new ObjectMapper();
+			json = mapper.writeValueAsString(updated_record);
+		}else{
+			response.sendError(401);
+		}
+		return json;
+	}
+	
 	@DELETE
 	@Path("/{id}")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -176,7 +205,12 @@ public class VideosResource extends MyApplication{
 			String uploads_path = "/var/www/video-app-uploads/";
 			String uploads_url = "http://localhost/video-app-uploads/";
 			
+			String segments_url = "http://localhost/video-app-segments/";
+			String segments_path = "/var/www/video-app-segments/";
+			
 			File dir = new File(uploads_path + user_id + "/" + video_folder);
+			dir.mkdir();
+			dir = new File(segments_path + user_id + "/" + video_folder);
 			dir.mkdir();
 			
 			String uploaded_file_location = uploads_path + user_id + "/" + video_folder + "/" + digest + "." + extension;
@@ -185,17 +219,30 @@ public class VideosResource extends MyApplication{
 			String transcoded_file_url = uploads_url + user_id + "/" + video_folder + "/" + digest + ".transcoded.mp4";
 			String thumbnail_location = uploads_path + user_id + "/" + video_folder + "/" + digest + ".jpg";
 			String thumbnail_url = uploads_url + user_id + "/" + video_folder + "/" + digest + ".jpg";
+			String segments_file_location = segments_path + user_id + "/" + video_folder;
+			String segments_file_url = segments_url + user_id + "/" + video_folder;
 			
 			writeToFile(uploaded_input_stream, uploaded_file_location);
 			
 			HashMap<String, String> record = new HashMap();
+			
 			record.put("title", file_name);
-			record.put("video_file", uploaded_file_url);
-			record.put("thumbnail", thumbnail_url);
+			record.put("uploaded_file_url", uploaded_file_url);
+			record.put("uploaded_file_location", uploaded_file_location);
+			
+			record.put("thumbnail_url", thumbnail_url);
+			record.put("thumbnail_location", thumbnail_location);
+			
+			record.put("transcoded_file_location", transcoded_file_location);
+			record.put("transcoded_file_url", transcoded_file_url);
+
+			record.put("segments_file_location", segments_file_location);
+			record.put("segments_file_url", segments_file_url);
+			
 			inserted_record = video.create(record);
 			json = mapper.writeValueAsString(inserted_record);
-
-			transcode(inserted_record, uploaded_file_location, transcoded_file_location);
+			
+			transcode(inserted_record, uploaded_file_location, transcoded_file_location, segments_file_location);
 			get_thumbnail(uploaded_file_location, thumbnail_location);
 	    }else{
 			response.sendError(401);
@@ -210,7 +257,7 @@ public class VideosResource extends MyApplication{
 		p.waitFor();
 	}
 
-	private void transcode(final ArrayList video_data, final String uploaded_file_location, String transcoded_file_location) throws IOException{
+	private void transcode(final ArrayList video_data, final String uploaded_file_location, final String transcoded_file_location, final String segments_file_location) throws IOException{
 		ProcessBuilder pb = new ProcessBuilder("ffmpeg", "-i", uploaded_file_location, transcoded_file_location);
 	    final Process p = pb.start();
 	    new Thread() {
@@ -238,9 +285,29 @@ public class VideosResource extends MyApplication{
 		            System.out.printf("Progress: %.2f%%%n", progress * 100);
 		        }
 	    	}finally{
+	    		try {
+					segment_video(video_data, transcoded_file_location, segments_file_location);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+	    	}
+	      }		
+	    }.start();
+	}
+	
+	private void segment_video(final ArrayList video_data, String transcoded_file_location, String segments_file_location) throws IOException {
+		Runtime rt = Runtime.getRuntime();
+		String[] envp = null;
+		File exec_path = new File(segments_file_location);
+		Process pr = rt.exec("/usr/bin/ffmpeg -i " + transcoded_file_location + " -acodec copy -bsf:a h264_mp4toannexb -vcodec libx264 -vprofile baseline -maxrate 1000k -bufsize 1000k -s 960x540 -bsf:v dump_extra -map 0 -f segment -segment_format mpegts -segment_list playlist.m3u8 -segment_time 2 segment-%d.ts", envp, exec_path);
+		new Thread() {
+	      public void run() {
+	    	try{
+	    		System.out.printf("Segmenting...");
+	    	}finally{
 	    		confirm_video(video_data);
 	    	}
-	      }
+	      }		
 	    }.start();
 	}
 
