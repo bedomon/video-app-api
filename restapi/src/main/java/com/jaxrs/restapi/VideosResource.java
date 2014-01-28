@@ -257,10 +257,19 @@ public class VideosResource extends MyApplication{
 		p.waitFor();
 	}
 
-	private void transcode(final ArrayList video_data, final String uploaded_file_location, final String transcoded_file_location, final String segments_file_location) throws IOException{
-		ProcessBuilder pb = new ProcessBuilder("ffmpeg", "-i", uploaded_file_location, transcoded_file_location);
-	    final Process p = pb.start();
-	    new Thread() {
+	private void transcode(final ArrayList video_data, final String uploaded_file_location, final String transcoded_file_location, final String segments_file_location) throws IOException, InterruptedException{
+	/*	String command = "/home/vlatko/bin/ffmpeg -i " + uploaded_file_location + " -acodec copy -vcodec libx264 " + transcoded_file_location;
+		System.out.println(command);
+		Process p = Runtime.getRuntime().exec(command);
+		p.waitFor();
+		*/
+		
+		ProcessBuilder pb = new ProcessBuilder();
+		pb.command("/home/vlatko/bin/ffmpeg", "-i", uploaded_file_location, "-acodec", "copy", "-vcodec", "libx264", transcoded_file_location);
+		System.out.println(pb.command().toString());
+		final Process p = pb.start();
+	   
+		new Thread() {
 	      public void run() {
 	    	try{
 		        Scanner sc = new Scanner(p.getErrorStream());
@@ -285,9 +294,11 @@ public class VideosResource extends MyApplication{
 		            System.out.printf("Progress: %.2f%%%n", progress * 100);
 		        }
 	    	}finally{
-	    		try {
+	    		System.out.println("test");
+				try {
 					segment_video(video_data, transcoded_file_location, segments_file_location);
 				} catch (IOException e) {
+					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 	    	}
@@ -299,7 +310,9 @@ public class VideosResource extends MyApplication{
 		Runtime rt = Runtime.getRuntime();
 		String[] envp = null;
 		File exec_path = new File(segments_file_location);
-		Process pr = rt.exec("/usr/bin/ffmpeg -i " + transcoded_file_location + " -acodec copy -bsf:a h264_mp4toannexb -vcodec libx264 -vprofile baseline -maxrate 1000k -bufsize 1000k -s 960x540 -bsf:v dump_extra -map 0 -f segment -segment_format mpegts -segment_list playlist.m3u8 -segment_time 2 segment-%d.ts", envp, exec_path);
+		Process pr = rt.exec("/home/vlatko/bin/ffmpeg -i " + transcoded_file_location + " -acodec copy -bsf:a h264_mp4toannexb -vcodec libx264 -vprofile baseline -maxrate 1000k -bufsize 1000k -s 960x540 -bsf:v dump_extra -map 0 -f segment -segment_format mpegts -segment_list playlist.m3u8 -segment_time 2 segment-%d.ts", envp, exec_path);
+		System.out.println("/home/vlatko/bin/ffmpeg -i " + transcoded_file_location + " -acodec copy -bsf:a h264_mp4toannexb -vcodec libx264 -vprofile baseline -maxrate 1000k -bufsize 1000k -s 960x540 -bsf:v dump_extra -map 0 -f segment -segment_format mpegts -segment_list playlist.m3u8 -segment_time 2 segment-%d.ts");
+	
 		new Thread() {
 	      public void run() {
 	    	try{

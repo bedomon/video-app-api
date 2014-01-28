@@ -22,7 +22,7 @@ public class Database {
 
 	public String table = getClass().getSimpleName().toLowerCase() + "s";
 	static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
-	static final String DB_URL = "jdbc:mysql://localhost/myapp";
+	static final String DB_URL = "jdbc:mysql://localhost/videos_app_database";
 
 	// Database credentials
 	static final String USER = "root";
@@ -119,13 +119,15 @@ public class Database {
 	    while (it.hasNext()) {
 	    	Map.Entry pairs = (Map.Entry)it.next();
 	    	String value = (String) pairs.getValue();
-	    	String key = (String) pairs.getKey();
-	    	if(table.equals("users") && key.equals("password")){
-				value = encrypt_password(value, date, date_format);
-			}
-			columns.add(key);
-			if(value == null) value = "";
-			values.add("'" + value.toString().replaceAll("'","''") + "'");
+	    	if (value != null){
+		    	String key = (String) pairs.getKey();
+		    	if(table.equals("users") && key.equals("password")){
+					value = encrypt_password(value, date, date_format);
+				}
+				columns.add(key);
+				if(value == null) value = "";
+				values.add("'" + value.toString().replaceAll("'","''") + "'");
+	    	}
 	        it.remove(); 
 	    }
 		
