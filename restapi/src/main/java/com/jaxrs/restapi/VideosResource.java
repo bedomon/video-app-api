@@ -213,9 +213,9 @@ public class VideosResource extends MyApplication{
 			String video_folder = generate_digest(file_name);
 			
 			String uploads_path = "/var/www/video-app-uploads/";
-			String uploads_url = "http://192.168.0.103/video-app-uploads/";
+			String uploads_url = "http://localhost/video-app-uploads/";
 			
-			String segments_url = "http://192.168.0.103/video-app-segments/";
+			String segments_url = "http://localhost/video-app-segments/";
 			String segments_path = "/var/www/video-app-segments/";
 			
 			File dir = new File(uploads_path + user_id + "/" + video_folder);
